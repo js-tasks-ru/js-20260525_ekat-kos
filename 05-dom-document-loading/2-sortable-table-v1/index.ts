@@ -13,9 +13,11 @@ interface SortableTableHeader {
 }
 
 export default class SortableTable {
-  element: HTMLElement | null = null;
+	element: HTMLElement | null = null;
+	private sortedData: SortableTableData[];
 
-  constructor(private headersConfig: SortableTableHeader[] = [], private data: SortableTableData[] = []) {
+	constructor(private headersConfig: SortableTableHeader[] = [], private data: SortableTableData[] = []) {
+	 this.sortedData = data;
     this.render();
   }
 
@@ -24,17 +26,21 @@ export default class SortableTable {
     if (!header || !header.sortable) return;
 
     const direction = order === 'desc' ? -1 : 1;
-    const sortType = header.sortType;
+	const sortType = header.sortType;
 
-    this.data = [...this.data].sort((a, b) => {
+
+    this.sortedData = [...this.data].sort((a, b) => {
       const valueA = a[field];
-      const valueB = b[field];
+		const valueB = b[field];
+	   const options: Intl.CollatorOptions = {
+       caseFirst: "upper",
+           };
 
-      if (sortType === 'number' && typeof valueA === 'number' && typeof valueB === 'number') {
-        return (valueA - valueB) * direction;
+      if (sortType === 'number') {
+        return (Number(valueA)  - Number(valueB)) * direction;
 		 }
 		 
-      return String(valueA).localeCompare(String(valueB), ['ru', 'en']) * direction;
+      return String(valueA).localeCompare(String(valueB), ['ru', 'en'], options) * direction;
     });
 
     this.updateBody();
@@ -44,7 +50,7 @@ export default class SortableTable {
   private updateHeaderOrder(field: string, order: SortOrder): void {
     if (!this.element) return;
 
-    const columns = this.element.querySelectorAll('[data-id]');
+    const columns = this.element.querySelectorAll('.sortable-table__header [data-id]');
     columns.forEach(column => {
       if (column.getAttribute('data-id') === field) {
         column.setAttribute('data-order', order);
@@ -109,7 +115,7 @@ export default class SortableTable {
   }
 
   private getBody(): string {
-    return this.data.map(row => this.getRow(row)).join('');
+    return this.sortedData.map(row => this.getRow(row)).join('');
   }
 
   private template(): string {
